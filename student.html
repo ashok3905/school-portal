@@ -9,15 +9,15 @@
     <h1>Student Dashboard</h1>
     <div id="studentInfo"></div>
     <button onclick="window.location.href='index.html'">Logout</button>
+    <button onclick="loadData()">Refresh All Data</button>
 
     <div>
         <h2>Admin Posts</h2>
-        <button onclick="loadData()">Refresh</button>
         <div id="adminPosts"></div>
     </div>
 
     <div>
-        <h2>Faculty Posts</h2>
+        <h2>Faculty Posts for Your Class</h2>
         <div id="facultyPosts"></div>
     </div>
 
@@ -30,6 +30,7 @@
         function initializeStudent() {
             studentCode = sessionStorage.getItem('studentCode') || '';
             if (!studentCode) {
+                alert('Please login first');
                 window.location.href = 'index.html';
                 return false;
             }
@@ -39,54 +40,72 @@
             if (match) {
                 studentClass = match[1].toLowerCase();
                 studentRoll = match[2];
+            } else {
+                alert('Invalid student code format');
+                window.location.href = 'index.html';
+                return false;
             }
 
             document.getElementById('studentInfo').innerHTML = 
-                `<h2>Welcome Student - Class ${studentClass.toUpperCase()}, Roll No: ${studentRoll}</h2>`;
+                `<h3>Welcome Student - Class ${studentClass.toUpperCase()}, Roll No: ${studentRoll}</h3>`;
             
             return true;
         }
 
         async function loadData() {
             try {
+                console.log('Loading data for student class:', studentClass);
                 const response = await fetch(`${API_BASE}/data`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Received data:', data);
+                
                 displayAdminPosts(data);
                 displayFacultyPosts(data);
             } catch (error) {
+                console.error('Error loading data:', error);
                 document.getElementById('adminPosts').innerHTML = 
                     '<p>Error loading data. Make sure the server is running.</p>';
+                document.getElementById('facultyPosts').innerHTML = 
+                    '<p>Error loading faculty posts.</p>';
             }
         }
 
         function displayAdminPosts(data) {
             let html = '';
             
+            // Holidays section
             html += '<h3>Holidays</h3>';
-            if (data.holidays.length > 0) {
-                data.holidays.forEach(post => {
+            if (data.holidays && data.holidays.length > 0) {
+                data.holidays.slice().reverse().forEach(post => {
                     html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                 });
             } else {
-                html += '<p>No holidays posted</p>';
+                html += '<p>No holidays announced yet</p>';
             }
 
-            html += '<h3>Payment Dues</h3>';
-            if (data.paymentDues[studentClass] && data.paymentDues[studentClass].length > 0) {
-                data.paymentDues[studentClass].forEach(post => {
+            // Payment dues section
+            html += '<h3>Payment Dues for Your Class</h3>';
+            if (data.paymentDues && data.paymentDues[studentClass] && data.paymentDues[studentClass].length > 0) {
+                data.paymentDues[studentClass].slice().reverse().forEach(post => {
                     html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                 });
             } else {
                 html += '<p>No payment dues for your class</p>';
             }
 
-            html += '<h3>Key Information</h3>';
-            if (data.keyInfo.length > 0) {
-                data.keyInfo.forEach(post => {
+            // Key information section
+            html += '<h3>Important Information</h3>';
+            if (data.keyInfo && data.keyInfo.length > 0) {
+                data.keyInfo.slice().reverse().forEach(post => {
                     html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                 });
             } else {
-                html += '<p>No key information posted</p>';
+                html += '<p>No important information posted yet</p>';
             }
 
             document.getElementById('adminPosts').innerHTML = html;
@@ -95,34 +114,37 @@
         function displayFacultyPosts(data) {
             let html = '';
             
-            if (data.facultyPosts[studentClass]) {
+            if (data.facultyPosts && data.facultyPosts[studentClass]) {
                 const posts = data.facultyPosts[studentClass];
                 
+                // Homework section
                 html += '<h3>Homework</h3>';
                 if (posts.homework && posts.homework.length > 0) {
-                    posts.homework.forEach(post => {
+                    posts.homework.slice().reverse().forEach(post => {
                         html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                     });
                 } else {
-                    html += '<p>No homework posted</p>';
+                    html += '<p>No homework assigned yet</p>';
                 }
 
+                // Assignments section
                 html += '<h3>Online Assignments</h3>';
                 if (posts.assignment && posts.assignment.length > 0) {
-                    posts.assignment.forEach(post => {
+                    posts.assignment.slice().reverse().forEach(post => {
                         html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                     });
                 } else {
-                    html += '<p>No assignments posted</p>';
+                    html += '<p>No online assignments posted yet</p>';
                 }
 
+                // Subject information section
                 html += '<h3>Subject Information</h3>';
                 if (posts.subject && posts.subject.length > 0) {
-                    posts.subject.forEach(post => {
+                    posts.subject.slice().reverse().forEach(post => {
                         html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                     });
                 } else {
-                    html += '<p>No subject information posted</p>';
+                    html += '<p>No subject information posted yet</p>';
                 }
             } else {
                 html = '<p>No faculty posts for your class yet</p>';

@@ -11,20 +11,20 @@
 
     <div>
         <h2>Post Holidays</h2>
-        <textarea id="holidayText" placeholder="Enter holiday information"></textarea>
+        <textarea id="holidayText" placeholder="Enter holiday information" rows="4" cols="50"></textarea><br>
         <button onclick="postHoliday()">Post Holiday</button>
     </div>
 
     <div>
         <h2>Post Payment Dues</h2>
-        <input type="text" id="paymentClass" placeholder="Class (e.g., 1a)">
-        <textarea id="paymentText" placeholder="Enter payment due information"></textarea>
+        <input type="text" id="paymentClass" placeholder="Class (e.g., 1a, 2b, 3c)"><br>
+        <textarea id="paymentText" placeholder="Enter payment due information" rows="4" cols="50"></textarea><br>
         <button onclick="postPaymentDue()">Post Payment Due</button>
     </div>
 
     <div>
         <h2>Post Key Information</h2>
-        <textarea id="keyInfoText" placeholder="Enter key information"></textarea>
+        <textarea id="keyInfoText" placeholder="Enter key information" rows="4" cols="50"></textarea><br>
         <button onclick="postKeyInfo()">Post Key Information</button>
     </div>
 
@@ -72,6 +72,12 @@
             
             if (!classCode || !text) {
                 alert('Please enter both class and payment information');
+                return;
+            }
+
+            // Validate class format (should be like 1a, 2b, etc.)
+            if (!classCode.match(/^\d+[a-z]$/)) {
+                alert('Please enter class in correct format (e.g., 1a, 2b, 3c)');
                 return;
             }
 
@@ -130,9 +136,16 @@
         async function loadData() {
             try {
                 const response = await fetch(`${API_BASE}/data`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Admin loaded data:', data);
                 displayCurrentPosts(data);
             } catch (error) {
+                console.error('Error loading data:', error);
                 document.getElementById('currentPosts').innerHTML = 
                     '<p>Error loading data. Make sure the server is running.</p>';
             }
@@ -141,35 +154,59 @@
         function displayCurrentPosts(data) {
             let html = '';
             
-            html += '<h3>Holidays (' + data.holidays.length + ')</h3>';
-            if (data.holidays.length > 0) {
-                data.holidays.forEach(post => {
+            // Display holidays
+            html += '<h3>Holidays (' + (data.holidays ? data.holidays.length : 0) + ')</h3>';
+            if (data.holidays && data.holidays.length > 0) {
+                data.holidays.slice().reverse().forEach(post => {
                     html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                 });
             } else {
                 html += '<p>No holidays posted</p>';
             }
 
+            // Display payment dues by class
             html += '<h3>Payment Dues</h3>';
-            const classes = Object.keys(data.paymentDues);
+            const classes = data.paymentDues ? Object.keys(data.paymentDues) : [];
             if (classes.length > 0) {
-                classes.forEach(classCode => {
+                classes.sort().forEach(classCode => {
                     html += `<h4>Class ${classCode.toUpperCase()}</h4>`;
-                    data.paymentDues[classCode].forEach(post => {
-                        html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
-                    });
+                    if (data.paymentDues[classCode] && data.paymentDues[classCode].length > 0) {
+                        data.paymentDues[classCode].slice().reverse().forEach(post => {
+                            html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                        });
+                    }
                 });
             } else {
                 html += '<p>No payment dues posted</p>';
             }
 
-            html += '<h3>Key Information (' + data.keyInfo.length + ')</h3>';
-            if (data.keyInfo.length > 0) {
-                data.keyInfo.forEach(post => {
+            // Display key information
+            html += '<h3>Key Information (' + (data.keyInfo ? data.keyInfo.length : 0) + ')</h3>';
+            if (data.keyInfo && data.keyInfo.length > 0) {
+                data.keyInfo.slice().reverse().forEach(post => {
                     html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                 });
             } else {
                 html += '<p>No key information posted</p>';
+            }
+
+            // Display faculty posts summary
+            html += '<h3>Faculty Posts Summary</h3>';
+            const facultyClasses = data.facultyPosts ? Object.keys(data.facultyPosts) : [];
+            if (facultyClasses.length > 0) {
+                facultyClasses.sort().forEach(classCode => {
+                    const classPosts = data.facultyPosts[classCode];
+                    const homeworkCount = classPosts.homework ? classPosts.homework.length : 0;
+                    const assignmentCount = classPosts.assignment ? classPosts.assignment.length : 0;
+                    const subjectCount = classPosts.subject ? classPosts.subject.length : 0;
+                    
+                    html += `<p><strong>Class ${classCode.toUpperCase()}:</strong> 
+                             ${homeworkCount} homework, 
+                             ${assignmentCount} assignments, 
+                             ${subjectCount} subject info posts</p>`;
+                });
+            } else {
+                html += '<p>No faculty posts yet</p>';
             }
 
             document.getElementById('currentPosts').innerHTML = html;

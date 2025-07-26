@@ -38,7 +38,7 @@
     </div>
 
     <div>
-        <h2>Your Posts</h2>
+        <h2>Your Posts to Students</h2>
         <div id="facultyPosts"></div>
     </div>
 
@@ -50,6 +50,7 @@
         function initializeFaculty() {
             facultyCode = sessionStorage.getItem('facultyCode') || '';
             if (!facultyCode) {
+                alert('Please login first');
                 window.location.href = 'index.html';
                 return false;
             }
@@ -58,6 +59,10 @@
             const match = facultyCode.match(/222p-(\d+[a-z])/i);
             if (match) {
                 facultyClass = match[1].toLowerCase();
+            } else {
+                alert('Invalid faculty code format');
+                window.location.href = 'index.html';
+                return false;
             }
 
             document.getElementById('facultyInfo').innerHTML = 
@@ -106,10 +111,18 @@
         async function loadData() {
             try {
                 const response = await fetch(`${API_BASE}/data`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Received data:', data);
+                
                 displayAdminPosts(data);
                 displayFacultyPosts(data);
             } catch (error) {
+                console.error('Error loading data:', error);
                 document.getElementById('adminPosts').innerHTML = 
                     '<p>Error loading data. Make sure the server is running.</p>';
             }
@@ -119,8 +132,8 @@
             let html = '';
             
             html += '<h3>Holidays</h3>';
-            if (data.holidays.length > 0) {
-                data.holidays.forEach(post => {
+            if (data.holidays && data.holidays.length > 0) {
+                data.holidays.slice().reverse().forEach(post => {
                     html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                 });
             } else {
@@ -128,8 +141,8 @@
             }
 
             html += '<h3>Payment Dues for Your Class</h3>';
-            if (data.paymentDues[facultyClass] && data.paymentDues[facultyClass].length > 0) {
-                data.paymentDues[facultyClass].forEach(post => {
+            if (data.paymentDues && data.paymentDues[facultyClass] && data.paymentDues[facultyClass].length > 0) {
+                data.paymentDues[facultyClass].slice().reverse().forEach(post => {
                     html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                 });
             } else {
@@ -137,8 +150,8 @@
             }
 
             html += '<h3>Key Information</h3>';
-            if (data.keyInfo.length > 0) {
-                data.keyInfo.forEach(post => {
+            if (data.keyInfo && data.keyInfo.length > 0) {
+                data.keyInfo.slice().reverse().forEach(post => {
                     html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                 });
             } else {
@@ -151,34 +164,34 @@
         function displayFacultyPosts(data) {
             let html = '';
             
-            if (data.facultyPosts[facultyClass]) {
+            if (data.facultyPosts && data.facultyPosts[facultyClass]) {
                 const posts = data.facultyPosts[facultyClass];
                 
-                html += '<h3>Homework Posts</h3>';
+                html += '<h3>Your Homework Posts</h3>';
                 if (posts.homework && posts.homework.length > 0) {
-                    posts.homework.forEach(post => {
+                    posts.homework.slice().reverse().forEach(post => {
                         html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                     });
                 } else {
-                    html += '<p>No homework posted</p>';
+                    html += '<p>No homework posted yet</p>';
                 }
 
-                html += '<h3>Assignment Posts</h3>';
+                html += '<h3>Your Assignment Posts</h3>';
                 if (posts.assignment && posts.assignment.length > 0) {
-                    posts.assignment.forEach(post => {
+                    posts.assignment.slice().reverse().forEach(post => {
                         html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                     });
                 } else {
-                    html += '<p>No assignments posted</p>';
+                    html += '<p>No assignments posted yet</p>';
                 }
 
-                html += '<h3>Subject Information Posts</h3>';
+                html += '<h3>Your Subject Information Posts</h3>';
                 if (posts.subject && posts.subject.length > 0) {
-                    posts.subject.forEach(post => {
+                    posts.subject.slice().reverse().forEach(post => {
                         html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
                     });
                 } else {
-                    html += '<p>No subject information posted</p>';
+                    html += '<p>No subject information posted yet</p>';
                 }
             } else {
                 html = '<p>No posts yet</p>';
