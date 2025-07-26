@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Login</title>
+</head>
+<body>
+    <h1>School Login</h1>
+    <div>
+        <h2>Select Your Role</h2>
+        <button onclick="showLogin('admin')">Admin Login</button>
+        <button onclick="showLogin('faculty')">Faculty Login</button>
+        <button onclick="showLogin('student')">Student Login</button>
+    </div>
+
+    <div id="loginForm" style="display:none;">
+        <h3 id="loginTitle"></h3>
+        <input type="text" id="loginCode" placeholder="Enter login code">
+        <button onclick="processLogin()">Login</button>
+        <button onclick="hideLogin()">Cancel</button>
+    </div>
+
+    <script>
+        let currentRole = '';
+
+        function showLogin(role) {
+            currentRole = role;
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('loginTitle').textContent = role.charAt(0).toUpperCase() + role.slice(1) + ' Login';
+            document.getElementById('loginCode').value = '';
+            
+            if (role === 'admin') {
+                document.getElementById('loginCode').placeholder = 'Enter admin code (222p1a0521)';
+            } else if (role === 'faculty') {
+                document.getElementById('loginCode').placeholder = 'Enter faculty code (222p-1a)';
+            } else {
+                document.getElementById('loginCode').placeholder = 'Enter student code (222p-1a-10)';
+            }
+        }
+
+        function hideLogin() {
+            document.getElementById('loginForm').style.display = 'none';
+            currentRole = '';
+        }
+
+        function processLogin() {
+            const code = document.getElementById('loginCode').value.trim();
+            
+            if (currentRole === 'admin') {
+                if (code === '222p1a0521') {
+                    window.location.href = 'admin.html';
+                } else {
+                    alert('Invalid admin code');
+                }
+            } else if (currentRole === 'faculty') {
+                if (code.match(/^222p-\d+[a-z]$/i)) {
+                    sessionStorage.setItem('facultyCode', code);
+                    window.location.href = 'faculty.html';
+                } else {
+                    alert('Invalid faculty code format. Use: 222p-1a');
+                }
+            } else if (currentRole === 'student') {
+                if (code.match(/^222p-\d+[a-z]-\d+$/i)) {
+                    sessionStorage.setItem('studentCode', code);
+                    window.location.href = 'student.html';
+                } else {
+                    alert('Invalid student code format. Use: 222p-1a-10');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

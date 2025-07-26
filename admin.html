@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    <button onclick="window.location.href='index.html'">Logout</button>
+
+    <div>
+        <h2>Post Holidays</h2>
+        <textarea id="holidayText" placeholder="Enter holiday information"></textarea>
+        <button onclick="postHoliday()">Post Holiday</button>
+    </div>
+
+    <div>
+        <h2>Post Payment Dues</h2>
+        <input type="text" id="paymentClass" placeholder="Class (e.g., 1a)">
+        <textarea id="paymentText" placeholder="Enter payment due information"></textarea>
+        <button onclick="postPaymentDue()">Post Payment Due</button>
+    </div>
+
+    <div>
+        <h2>Post Key Information</h2>
+        <textarea id="keyInfoText" placeholder="Enter key information"></textarea>
+        <button onclick="postKeyInfo()">Post Key Information</button>
+    </div>
+
+    <div>
+        <h2>Current Posts</h2>
+        <button onclick="loadData()">Refresh</button>
+        <div id="currentPosts"></div>
+    </div>
+
+    <script>
+        const API_BASE = `${window.location.origin}/api`;
+
+        async function postHoliday() {
+            const text = document.getElementById('holidayText').value.trim();
+            if (!text) {
+                alert('Please enter holiday information');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/holidays`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Holiday posted successfully!');
+                    document.getElementById('holidayText').value = '';
+                    loadData();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        async function postPaymentDue() {
+            const classCode = document.getElementById('paymentClass').value.trim().toLowerCase();
+            const text = document.getElementById('paymentText').value.trim();
+            
+            if (!classCode || !text) {
+                alert('Please enter both class and payment information');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/payment-dues`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ classCode, text })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Payment due posted successfully!');
+                    document.getElementById('paymentClass').value = '';
+                    document.getElementById('paymentText').value = '';
+                    loadData();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        async function postKeyInfo() {
+            const text = document.getElementById('keyInfoText').value.trim();
+            if (!text) {
+                alert('Please enter key information');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/key-info`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Key information posted successfully!');
+                    document.getElementById('keyInfoText').value = '';
+                    loadData();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch(`${API_BASE}/data`);
+                const data = await response.json();
+                displayCurrentPosts(data);
+            } catch (error) {
+                document.getElementById('currentPosts').innerHTML = 
+                    '<p>Error loading data. Make sure the server is running.</p>';
+            }
+        }
+
+        function displayCurrentPosts(data) {
+            let html = '';
+            
+            html += '<h3>Holidays (' + data.holidays.length + ')</h3>';
+            if (data.holidays.length > 0) {
+                data.holidays.forEach(post => {
+                    html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                });
+            } else {
+                html += '<p>No holidays posted</p>';
+            }
+
+            html += '<h3>Payment Dues</h3>';
+            const classes = Object.keys(data.paymentDues);
+            if (classes.length > 0) {
+                classes.forEach(classCode => {
+                    html += `<h4>Class ${classCode.toUpperCase()}</h4>`;
+                    data.paymentDues[classCode].forEach(post => {
+                        html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                    });
+                });
+            } else {
+                html += '<p>No payment dues posted</p>';
+            }
+
+            html += '<h3>Key Information (' + data.keyInfo.length + ')</h3>';
+            if (data.keyInfo.length > 0) {
+                data.keyInfo.forEach(post => {
+                    html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                });
+            } else {
+                html += '<p>No key information posted</p>';
+            }
+
+            document.getElementById('currentPosts').innerHTML = html;
+        }
+
+        // Load data when page loads
+        window.onload = loadData;
+    </script>
+</body>
+</html>

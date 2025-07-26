@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard</title>
+</head>
+<body>
+    <h1>Faculty Dashboard</h1>
+    <div id="facultyInfo"></div>
+    <button onclick="window.location.href='index.html'">Logout</button>
+
+    <div>
+        <h2>Post to Your Students</h2>
+        <div>
+            <h3>Post Homework</h3>
+            <textarea id="homeworkText" placeholder="Enter homework details"></textarea>
+            <button onclick="postFacultyData('homework')">Post Homework</button>
+        </div>
+
+        <div>
+            <h3>Post Online Assignment</h3>
+            <textarea id="assignmentText" placeholder="Enter online assignment details"></textarea>
+            <button onclick="postFacultyData('assignment')">Post Assignment</button>
+        </div>
+
+        <div>
+            <h3>Post Subject Information</h3>
+            <textarea id="subjectText" placeholder="Enter key information about subjects"></textarea>
+            <button onclick="postFacultyData('subject')">Post Subject Info</button>
+        </div>
+    </div>
+
+    <div>
+        <h2>Admin Posts</h2>
+        <button onclick="loadData()">Refresh</button>
+        <div id="adminPosts"></div>
+    </div>
+
+    <div>
+        <h2>Your Posts</h2>
+        <div id="facultyPosts"></div>
+    </div>
+
+    <script>
+        const API_BASE = `${window.location.origin}/api`;
+        let facultyCode = '';
+        let facultyClass = '';
+
+        function initializeFaculty() {
+            facultyCode = sessionStorage.getItem('facultyCode') || '';
+            if (!facultyCode) {
+                window.location.href = 'index.html';
+                return false;
+            }
+
+            // Extract class from faculty code (222p-1a -> 1a)
+            const match = facultyCode.match(/222p-(\d+[a-z])/i);
+            if (match) {
+                facultyClass = match[1].toLowerCase();
+            }
+
+            document.getElementById('facultyInfo').innerHTML = 
+                `<h2>Welcome Faculty - Class ${facultyClass.toUpperCase()}</h2>`;
+            
+            return true;
+        }
+
+        async function postFacultyData(type) {
+            const textId = type === 'homework' ? 'homeworkText' : 
+                          type === 'assignment' ? 'assignmentText' : 'subjectText';
+            const text = document.getElementById(textId).value.trim();
+            
+            if (!text) {
+                alert('Please enter some text');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/faculty-posts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        classCode: facultyClass,
+                        type: type,
+                        text: text,
+                        facultyCode: facultyCode
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Posted successfully!');
+                    document.getElementById(textId).value = '';
+                    loadData();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch(`${API_BASE}/data`);
+                const data = await response.json();
+                displayAdminPosts(data);
+                displayFacultyPosts(data);
+            } catch (error) {
+                document.getElementById('adminPosts').innerHTML = 
+                    '<p>Error loading data. Make sure the server is running.</p>';
+            }
+        }
+
+        function displayAdminPosts(data) {
+            let html = '';
+            
+            html += '<h3>Holidays</h3>';
+            if (data.holidays.length > 0) {
+                data.holidays.forEach(post => {
+                    html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                });
+            } else {
+                html += '<p>No holidays posted</p>';
+            }
+
+            html += '<h3>Payment Dues for Your Class</h3>';
+            if (data.paymentDues[facultyClass] && data.paymentDues[facultyClass].length > 0) {
+                data.paymentDues[facultyClass].forEach(post => {
+                    html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                });
+            } else {
+                html += '<p>No payment dues for your class</p>';
+            }
+
+            html += '<h3>Key Information</h3>';
+            if (data.keyInfo.length > 0) {
+                data.keyInfo.forEach(post => {
+                    html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                });
+            } else {
+                html += '<p>No key information posted</p>';
+            }
+
+            document.getElementById('adminPosts').innerHTML = html;
+        }
+
+        function displayFacultyPosts(data) {
+            let html = '';
+            
+            if (data.facultyPosts[facultyClass]) {
+                const posts = data.facultyPosts[facultyClass];
+                
+                html += '<h3>Homework Posts</h3>';
+                if (posts.homework && posts.homework.length > 0) {
+                    posts.homework.forEach(post => {
+                        html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                    });
+                } else {
+                    html += '<p>No homework posted</p>';
+                }
+
+                html += '<h3>Assignment Posts</h3>';
+                if (posts.assignment && posts.assignment.length > 0) {
+                    posts.assignment.forEach(post => {
+                        html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                    });
+                } else {
+                    html += '<p>No assignments posted</p>';
+                }
+
+                html += '<h3>Subject Information Posts</h3>';
+                if (posts.subject && posts.subject.length > 0) {
+                    posts.subject.forEach(post => {
+                        html += `<p><strong>${post.date}:</strong> ${post.text}</p>`;
+                    });
+                } else {
+                    html += '<p>No subject information posted</p>';
+                }
+            } else {
+                html = '<p>No posts yet</p>';
+            }
+
+            document.getElementById('facultyPosts').innerHTML = html;
+        }
+
+        window.onload = function() {
+            if (initializeFaculty()) {
+                loadData();
+            }
+        };
+    </script>
+</body>
+</html>
